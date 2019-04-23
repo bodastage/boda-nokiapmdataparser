@@ -8,7 +8,7 @@ usage: java -jar boda-nokiapmdataparser.jar input_file
 
 
 # Download and installation
-Download the release from https://github.com/bodastage/boda-nokiacmdataparser/releases
+Download the release from https://github.com/bodastage/boda-nokiapmdataparser/releases
 
 # Requirements
 To run the jar file, you need Java version 1.8 and above.
