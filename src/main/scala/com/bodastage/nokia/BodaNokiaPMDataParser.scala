@@ -19,17 +19,22 @@ object BodaNokiaPMDataParser{
     }
 
     try{
-      Paths.get(args(0))
+      val f : Path = Paths.get(args(0))
+      if( (!Files.isRegularFile(f) && !Files.isDirectory(f)) && !Files.isReadable(f)){
+        throw new Exception(args(0).toString)
+      }
+
+      println("filename,start_time,interval,base_id,local_moid,ne_type,measurement_type,counter_id,counter_value")
+
+      this.processFileOrDirectory(args(0))
+
     }catch{
       case ex: Exception => {
         println("Error accessing file")
         sys.exit(1)
       }
     }
-    println("filename,start_time,interval,base_id,local_moid,ne_type,measurement_type,counter_id,counter_value")
 
-    println(args(0))
-    this.processFileOrDirectory(args(0))
   }
 
   /**
