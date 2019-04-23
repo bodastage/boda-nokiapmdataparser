@@ -5,16 +5,36 @@ import scala.xml.pull._
 import scala.collection.mutable.ArrayBuffer
 import java.io.File
 import java.nio.file.Path
+import java.nio.file.Paths
+import java.nio.file.Files
 import java.io.FileOutputStream
 import scala.xml.XML
 
 object BodaNokiaPMDataParser{
   def main(args: Array[String]): Unit = {
 
+    if(args.length != 1){
+      println("usage: java -jar boda-nokiapmdataparser.jar input_file")
+      sys.exit(1)
+    }
+
+    try{
+      val f : Path = Paths.get(args(0))
+      if( (!Files.isRegularFile(f) && !Files.isDirectory(f)) && !Files.isReadable(f)){
+        throw new Exception(args(0).toString)
+      }
+
       println("filename,start_time,interval,base_id,local_moid,ne_type,measurement_type,counter_id,counter_value")
 
-    println(args(0))
-    this.processFileOrDirectory(args(0))
+      this.processFileOrDirectory(args(0))
+
+    }catch{
+      case ex: Exception => {
+        println("Error accessing file")
+        sys.exit(1)
+      }
+    }
+
   }
 
   /**
@@ -34,9 +54,7 @@ object BodaNokiaPMDataParser{
   }
 
   def processFileOrDirectory(inputPath: String): Unit ={
-    import java.nio.file.Path
-    import java.nio.file.Paths
-    import java.nio.file.Files
+
 
     val file : Path = Paths.get(inputPath)
     val isRegularExecutableFile : Boolean = Files.isRegularFile(file) & Files.isReadable(file)
@@ -72,7 +90,7 @@ object BodaNokiaPMDataParser{
     var counterId: String= "";
     var counterValue: String = ""
 
-//    val outputDirectory = new File(args(1))
+    //    val outputDirectory = new File(args(1))
 
     val xml = new XMLEventReader(Source.fromFile(fileName))
     var buf = ArrayBuffer[String]()

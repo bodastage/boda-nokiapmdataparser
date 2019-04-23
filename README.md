@@ -14,7 +14,7 @@ Download the release from https://github.com/bodastage/boda-nokiapmdataparser/re
 To run the jar file, you need Java version 1.8 and above.
 
 # Getting help
-To report issues with the application or request new features use the issue [tracker](https://github.com/bodastage/boda-nokiacmdataparser/issues). For help and customizations send an email to info@bodastage.com.
+To report issues with the application or request new features use the issue [tracker](https://github.com/bodastage/boda-nokiapmdataparser/issues). For help and customizations send an email to info@bodastage.com.
 
 # Credits
 [Bodastage Solutions](http://www.bodastage.com) - info@bodastage.com
