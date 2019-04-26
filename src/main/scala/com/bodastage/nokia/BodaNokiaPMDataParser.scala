@@ -9,24 +9,73 @@ import java.nio.file.Paths
 import java.nio.file.Files
 import java.io.FileOutputStream
 import scala.xml.XML
+import scopt.OParser
+import java.util.zip.GZIPInputStream
+import java.io.BufferedInputStream
+import java.io.FileInputStream
+
+case class Config(
+   in: File = new File("."),
+//   out: File = new File(".")
+)
 
 object BodaNokiaPMDataParser{
+
   def main(args: Array[String]): Unit = {
 
-    if(args.length != 1){
-      println("usage: java -jar boda-nokiapmdataparser.jar input_file")
-      sys.exit(1)
+    val builder = OParser.builder[Config]
+    val parser1 = {
+      import builder._
+      OParser.sequence(
+        programName("boda-nokiapmdataparser"),
+        head("boda-nokiapmdataparser", "0.0.3"),
+        opt[File]('i', "in")
+          .required()
+          .valueName("<file>")
+          .action((x, c) => c.copy(in = x))
+          .validate(f =>
+            if( (!Files.isRegularFile(f.toPath) && !Files.isDirectory(f.toPath))
+                && !Files.isReadable(f.toPath)) failure(s"Failed to access input file/directory called ${f.getName}")
+            else success
+          )
+          .text("input file or directory, required."),
+//        opt[File]('o', "out")
+//          .valueName("<file>")
+//          .action((x, c) => c.copy(in = x))
+//          .validate(f =>
+//            if( (!Files.isRegularFile(f.toPath) && !Files.isDirectory(f.toPath))
+//              && !Files.isReadable(f.toPath)) failure(s"Failed to access file output file called ${f.getName}")
+//            else success
+//          )
+//          .text("optional output file"),
+        help("help").text("prints this usage text"),
+        note(sys.props("line.separator")),
+        note("Parses Nokia performance management files to csv. It processes plain text XML and gzipped XML files."),
+        note("Examples:"),
+        note("java -jar boda-nokiapmdataparser.jar -i FILENAME.xml"),
+        note("java -jar boda-nokiapmdataparser.jar -i FILENAME.gz"),
+        note(sys.props("line.separator")),
+        note("Copyright (c) 2019 Bodastage Solutions(http://www.bodastage.com)")
+
+      )
+    }
+
+    var inputFile : String = ""
+    OParser.parse(parser1, args, Config()) match {
+      case Some(config) =>
+        inputFile = config.in.getAbsolutePath
+
+      case _ =>
+      // arguments are bad, error message will have been displayed
+        sys.exit(1)
     }
 
     try{
-      val f : Path = Paths.get(args(0))
-      if( (!Files.isRegularFile(f) && !Files.isDirectory(f)) && !Files.isReadable(f)){
-        throw new Exception(args(0).toString)
-      }
+
 
       println("filename,start_time,interval,base_id,local_moid,ne_type,measurement_type,counter_id,counter_value")
 
-      this.processFileOrDirectory(args(0))
+      this.processFileOrDirectory(inputFile)
 
     }catch{
       case ex: Exception => {
@@ -92,7 +141,14 @@ object BodaNokiaPMDataParser{
 
     //    val outputDirectory = new File(args(1))
 
-    val xml = new XMLEventReader(Source.fromFile(fileName))
+
+    val contentType = Files.probeContentType(Paths.get(fileName))
+
+    var xml = new XMLEventReader(Source.fromFile(fileName))
+
+    if(contentType == "application/x-gzip"){
+      xml = new XMLEventReader(Source.fromInputStream(this.getGZIPInputStream(fileName)))
+    }
     var buf = ArrayBuffer[String]()
 
     for(event <- xml) {
@@ -146,6 +202,13 @@ object BodaNokiaPMDataParser{
       }
     }
   }
+
+  /**
+    * Returns InputFreamFrom
+    * @param s
+    * @return
+    */
+  def getGZIPInputStream(s: String) = new GZIPInputStream(new BufferedInputStream(new FileInputStream(s)))
 
   def toCSVFormat(s: String): String = {
     var csvValue: String = s
