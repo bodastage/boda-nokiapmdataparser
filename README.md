@@ -3,7 +3,8 @@ Parses Nokia PM XML files to csv
 
 # Usage
 ```
-usage: java -jar boda-nokiapmdataparser.jar input_file
+java -jar boda-nokiapmdataparser.jar -i FILENAME.xml
+java -jar boda-nokiapmdataparser.jar -i FILENAME.gz
 ```
 
 
