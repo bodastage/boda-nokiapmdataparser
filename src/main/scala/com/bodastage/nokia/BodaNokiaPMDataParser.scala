@@ -3,23 +3,24 @@ package com.bodastage.nokia
 import scala.io.Source
 import scala.xml.pull._
 import scala.collection.mutable.ArrayBuffer
-import java.io.File
+import java.io._
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.Files
-import java.io.FileOutputStream
+
 import scala.xml.XML
 import scopt.OParser
 import java.util.zip.GZIPInputStream
-import java.io.BufferedInputStream
-import java.io.FileInputStream
 
 case class Config(
-   in: File = new File("."),
-//   out: File = new File(".")
-)
+                   in: File = new File("."),
+                   out: File = null,
+                   version : Boolean = false
+                 )
 
 object BodaNokiaPMDataParser{
+
+  var outputFolder: String = "";
 
   def main(args: Array[String]): Unit = {
 
@@ -28,7 +29,7 @@ object BodaNokiaPMDataParser{
       import builder._
       OParser.sequence(
         programName("boda-nokiapmdataparser"),
-        head("boda-nokiapmdataparser", "0.0.3"),
+        head("boda-nokiapmdataparser", "0.1.0"),
         opt[File]('i', "in")
           .required()
           .valueName("<file>")
@@ -39,15 +40,17 @@ object BodaNokiaPMDataParser{
             else success
           )
           .text("input file or directory, required."),
-//        opt[File]('o', "out")
-//          .valueName("<file>")
-//          .action((x, c) => c.copy(in = x))
-//          .validate(f =>
-//            if( (!Files.isRegularFile(f.toPath) && !Files.isDirectory(f.toPath))
-//              && !Files.isReadable(f.toPath)) failure(s"Failed to access file output file called ${f.getName}")
-//            else success
-//          )
-//          .text("optional output file"),
+        opt[File]('o', "out")
+          .valueName("<file>")
+          .action((x, c) => c.copy(out = x))
+          .validate(f =>
+            if( !Files.isDirectory(f.toPath ) && !Files.isReadable(f.toPath)) failure(s"Failed to access outputdirectory called ${f.getName}")
+            else success
+          )
+          .text("output directory required."),
+        opt[Unit]('v', "version")
+          .action((_, c) => c.copy(version = true))
+          .text("Show version"),
         help("help").text("prints this usage text"),
         note(sys.props("line.separator")),
         note("Parses Nokia performance management files to csv. It processes plain text XML and gzipped XML files."),
@@ -61,10 +64,13 @@ object BodaNokiaPMDataParser{
     }
 
     var inputFile : String = ""
+    var outFile : File = null;
+    var showVersion : Boolean = false;
     OParser.parse(parser1, args, Config()) match {
       case Some(config) =>
         inputFile = config.in.getAbsolutePath
-
+        outFile = config.out
+        showVersion = config.version
       case _ =>
       // arguments are bad, error message will have been displayed
         sys.exit(1)
@@ -72,8 +78,29 @@ object BodaNokiaPMDataParser{
 
     try{
 
+      if(showVersion){
+        println("0.1.0")
+        sys.exit(0);
+      }
 
-      println("filename,start_time,interval,base_id,local_moid,ne_type,measurement_type,counter_id,counter_value")
+      if(outFile != null) outputFolder = outFile.getAbsoluteFile().toString
+
+      if(outputFolder.length == 0){
+        val header : String =
+          "filename," +
+          "start_time," +
+          "interval," +
+          "base_id," +
+          "local_moid," +
+          "ne_type," +
+          "measurement_type," +
+          "counter_id," +
+          "counter_value";
+
+        println(header)
+      }else{
+        outputFolder = outFile.getAbsolutePath();
+      }
 
       this.processFileOrDirectory(inputFile)
 
@@ -121,7 +148,6 @@ object BodaNokiaPMDataParser{
         this.parseFile(f.getAbsolutePath)
       }
     }
-
   }
 
   /**
@@ -150,6 +176,28 @@ object BodaNokiaPMDataParser{
       xml = new XMLEventReader(Source.fromInputStream(this.getGZIPInputStream(fileName)))
     }
     var buf = ArrayBuffer[String]()
+
+
+    val fileBaseName: String  = getFileBaseName(fileName);
+    var pw : PrintWriter = null;
+    if(outputFolder.length > 0){
+
+      val csvFile : String = outputFolder + File.separator + fileBaseName.replaceAll(".(xml|gz)$",".csv");
+
+      pw  = new PrintWriter(new File(csvFile));
+      val header : String =
+          "filename," +
+          "start_time," +
+          "interval," +
+          "base_id," +
+          "local_moid," +
+          "ne_type," +
+          "measurement_type," +
+          "counter_id," +
+          "counter_value";
+      pw.write(header + "\n");
+    }
+
 
     for(event <- xml) {
       event match {
@@ -192,7 +240,22 @@ object BodaNokiaPMDataParser{
             counterId = tag
             counterValue = buf.mkString
 
-            println(s"${getFileBaseName(fileName)},$startTime,$interval,$moBaseId,$moLocalMoId,$neType,$measType,$counterId,$counterValue")
+            val csvRow : String =
+              s"${getFileBaseName(fileName)}," +
+                s"$startTime," +
+                s"$interval," +
+                s"$moBaseId," +
+                s"$moLocalMoId," +
+                s"$neType," +
+                s"$measType," +
+                s"$counterId," +
+                s"$counterValue";
+
+            if(outputFolder.length == 0) {
+              println(csvRow);
+            }else{
+              pw.write(csvRow + "\n");
+            }
           }
 
           buf.clear
@@ -201,6 +264,8 @@ object BodaNokiaPMDataParser{
         case _ =>
       }
     }
+
+    if(pw != null ) pw.close();
   }
 
   /**

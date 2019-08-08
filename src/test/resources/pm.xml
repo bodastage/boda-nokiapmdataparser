@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<OMeS>
+    <PMSetup interval="60" startTime="2029-03-15T21:00:00.000-05:00:00">
+        <PMMOResult>
+            <MO>
+                <baseId>NE-MRBTS-1111</baseId>
+                <localMoid>DN:NE-LNBTS-1111</localMoid>
+            </MO>
+            <NE-WBTS_7.7 measurementType="LTE_S1AP">
+                <M00001>1111</M00001>
+                <M00001>0</M00001>
+                <M00001>0</M00001>
+                <M00001>0</M00001>
+                <M00001>0</M00001>
+            </NE-WBTS_7.7>
+        </PMMOResult>
+    </PMSetup>
+</OMeS>
