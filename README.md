@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/bodastage/boda-nokiapmdataparser.svg?branch=master)](https://travis-ci.org/bodastage/boda-nokiapmdataparser)
+
 # boda-nokiapmdataparser
 Parses Nokia PM XML files to csv
 
